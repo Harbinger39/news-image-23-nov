@@ -209,16 +209,24 @@ def pic_missile(dr, x, y, w, h):
 
 
 def pic_capitol(dr, x, y, w, h):
+    # Art was drafted for a 128px-tall box; scale the offsets from the
+    # bottom so nothing pokes above the picture box (the dome used to
+    # cover words in the lead text above this card).
+    k = h / 128.0
+
+    def up(v):
+        return y + h - int(round(v * k))
+
     dr.rectangle([x, y, x + w, y + h], fill=(196, 214, 232))
-    dr.rectangle([x, y + h - 22, x + w, y + h], fill=(46, 92, 52))
+    dr.rectangle([x, up(22), x + w, y + h], fill=(46, 92, 52))
     cx = x + w / 2
-    dr.rectangle([cx - 62, y + h - 62, cx + 62, y + h - 22], fill=(240, 238, 230))
-    dr.rectangle([cx - 30, y + h - 92, cx + 30, y + h - 62], fill=(240, 238, 230))
-    dr.pieslice([cx - 26, y + h - 118, cx + 26, y + h - 66], 180, 360,
+    dr.rectangle([cx - 62, up(62), cx + 62, up(22)], fill=(240, 238, 230))
+    dr.rectangle([cx - 30, up(92), cx + 30, up(62)], fill=(240, 238, 230))
+    dr.pieslice([cx - 26, up(118), cx + 26, up(66)], 180, 360,
                 fill=(240, 238, 230))
-    dr.rectangle([cx - 2, y + h - 128, cx + 2, y + h - 116], fill=(120, 110, 96))
+    dr.rectangle([cx - 2, up(128), cx + 2, up(116)], fill=(120, 110, 96))
     for i in range(-2, 3):
-        dr.rectangle([cx + i * 22 - 3, y + h - 58, cx + i * 22 + 3, y + h - 24],
+        dr.rectangle([cx + i * 22 - 3, up(58), cx + i * 22 + 3, up(24)],
                      fill=(180, 176, 164))
     dr.text((x + 8, y + 6), "258", font=BOLD(26), fill=(24, 62, 110))
     dr.text((x + 8, y + 34), "SEATS", font=BOLD(11), fill=(24, 62, 110))
@@ -226,11 +234,12 @@ def pic_capitol(dr, x, y, w, h):
 
 def pic_eu(dr, x, y, w, h):
     dr.rectangle([x, y, x + w, y + h], fill=(16, 42, 96))
-    cx, cy = x + w / 2, y + h / 2 - 6
+    # Star ring sized to stay inside the box (radius 52 poked 27px above it).
+    cx, cy = x + w / 2, y + h / 2 + 1
     import math as _m
     for i in range(12):
         a = _m.radians(i * 30 - 90)
-        sx, sy = cx + 52 * _m.cos(a), cy + 52 * _m.sin(a)
+        sx, sy = cx + 26 * _m.cos(a), cy + 26 * _m.sin(a)
         dr.polygon([(sx, sy - 6), (sx + 2, sy - 1), (sx + 6, sy), (sx + 2, sy + 2),
                     (sx + 1, sy + 6), (sx - 1, sy + 2), (sx - 6, sy + 1),
                     (sx - 2, sy - 2)], fill=(250, 204, 0))
@@ -258,19 +267,27 @@ def pic_chipfall(dr, x, y, w, h):
 
 
 def pic_fire(dr, x, y, w, h):
+    # Art was drafted for a 128px-tall box; scale the offsets from the
+    # bottom so flames, chimney and smoke stay inside the picture box
+    # (the flames used to reach into the lead text above this card).
+    k = h / 128.0
+
+    def up(v):
+        return y + h - int(round(v * k))
+
     dr.rectangle([x, y, x + w, y + h], fill=(40, 34, 30))
-    dr.rectangle([x, y + h - 34, x + w, y + h], fill=(60, 54, 48))
+    dr.rectangle([x, up(34), x + w, y + h], fill=(60, 54, 48))
     # factory block
-    dr.rectangle([x + 14, y + h - 66, x + w - 14, y + h - 34], fill=(120, 110, 100))
-    dr.rectangle([x + w - 52, y + h - 92, x + w - 30, y + h - 66], fill=(96, 88, 80))
+    dr.rectangle([x + 14, up(66), x + w - 14, up(34)], fill=(120, 110, 100))
+    dr.rectangle([x + w - 52, up(92), x + w - 30, up(66)], fill=(96, 88, 80))
     # flames
     for fx, fh, col in ((x + 30, 44, (250, 140, 20)), (x + 58, 58, (250, 90, 10)),
                         (x + 92, 40, (250, 180, 40)), (x + 124, 52, (250, 110, 15))):
-        dr.polygon([(fx, y + h - 66), (fx + 12, y + h - 66 - fh),
-                    (fx + 24, y + h - 66)], fill=col)
-    # smoke
-    for i, (sx0, sy0, r) in enumerate(((x + 40, y + 14, 12), (x + 66, y + 6, 15),
-                                      (x + 96, y + 12, 11))):
+        dr.polygon([(fx, up(66)), (fx + 12, up(66) - int(round(fh * k))),
+                    (fx + 24, up(66))], fill=col)
+    # smoke (kept inside the box top)
+    for i, (sx0, sy0, r) in enumerate(((x + 40, y + 16, 8), (x + 66, y + 12, 9),
+                                      (x + 96, y + 16, 8))):
         dr.ellipse([sx0 - r, sy0 - r, sx0 + r, sy0 + r], fill=(150, 150, 150))
     dr.text((x + 8, y + h - 20), "24 DEAD", font=BOLD(13), fill=(255, 255, 255))
 
@@ -279,9 +296,11 @@ def pic_smog(dr, x, y, w, h):
     dr.rectangle([x, y, x + w, y + h], fill=(196, 168, 120))
     dr.rectangle([x, y, x + w, y + h * 0.55], fill=(214, 190, 150))
     dr.ellipse([x + w - 56, y + 10, x + w - 18, y + 48], fill=(240, 200, 90))
-    # skyline in haze
+    # skyline in haze (buildings scaled to stay inside the picture box;
+    # at full height they poked 16px above it, into the leads above).
     for bx, bw, bh in ((x + 8, 26, 52), (x + 38, 20, 70), (x + 62, 30, 44),
                        (x + 96, 18, 62), (x + 118, 26, 50), (x + 148, 22, 58)):
+        bh = int(round(bh * (h - 22) / 70.0))
         dr.rectangle([bx, y + h - 20 - bh, bx + bw, y + h - 20], fill=(110, 96, 78))
     dr.rectangle([x, y + h - 20, x + w, y + h], fill=(70, 60, 48))
     dr.text((x + 8, y + 6), "AQI 500+", font=BOLD(16), fill=(120, 30, 20))
@@ -389,8 +408,8 @@ def lead(col, kicker, head, picfn, body, source, tagtxt):
     x = MX + col * (COLW + 12)
     d.text((x, LY), kicker, font=BOLD(10), fill=RED)
     y = headline(d, x, LY + 14, head, 17, COLW)
-    picfn(d, x, y + 4, COLW, 96)
-    y = y + 4 + 96 + 6
+    picfn(d, x, y + 4, COLW, 84)
+    y = y + 4 + 84 + 2
     y = para(d, x, y, body, SANS(10), COLW, max_lines=4)
     tw = tag(d, x, y + 2, tagtxt, GREEN if tagtxt == "CONFIRMED" else GOLD)
     d.text((x + tw + 6, y + 4), "Source: " + source, font=SANS(9), fill=GREY)
@@ -417,11 +436,11 @@ lead(2, "NATO  •  POLAND",
      "Polish airspace on Friday during an attack on Ukraine. NATO's North "
      "Atlantic Council meets on Monday to discuss the incursion.",
      "hromadske / Reuters", "CONFIRMED")
-rule(d, MX, W - MX, 336, 2)
+rule(d, MX, W - MX, 364, 2)
 
 # ------------------------------------------------------------ pictured cards
-d.text((MX, 342), "THE DAY IN PICTURES", font=BOLD(13), fill=INK)
-d.text((W - MX - d.textlength("Every picture shows its own story", font=SANS(10)), 344),
+d.text((MX, 370), "THE DAY IN PICTURES", font=BOLD(13), fill=INK)
+d.text((W - MX - d.textlength("Every picture shows its own story", font=SANS(10)), 372),
        "Every picture shows its own story", font=SANS(10), fill=GREY)
 CARDS = [
     ("US HOUSE", "Democrats clinch House majority — 258 seats, best since 1992",
@@ -449,17 +468,17 @@ CW = (W - 2 * MX - 4 * 10) // 5
 CH = 148
 for i, (kick, head, picfn, ttag, src) in enumerate(CARDS):
     cx = MX + (i % 5) * (CW + 10)
-    cy = 362 + (i // 5) * (CH + 8)
+    cy = 390 + (i // 5) * (CH + 8)
     d.rectangle([cx, cy, cx + CW, cy + CH], outline=LIGHT, width=1)
     picfn(d, cx + 1, cy + 1, CW - 2, 74)
     d.text((cx + 4, cy + 80), kick, font=BOLD(8), fill=RED)
     headline(d, cx + 4, cy + 92, head, 10, CW - 8, max_lines=3)
     tw = tag(d, cx + 4, cy + CH - 18, ttag, GREEN if ttag == "CONFIRMED" else GOLD)
     d.text((cx + 4 + tw + 4, cy + CH - 16), src, font=SANS(8), fill=GREY)
-rule(d, MX, W - MX, 672, 2)
+rule(d, MX, W - MX, 700, 2)
 
 # ------------------------------------------------- dotted world map + pins
-MAPX, MAPY, MAPW, MAPH = MX, 680, 600, 128
+MAPX, MAPY, MAPW, MAPH = MX, 708, 600, 128
 d.text((MAPX, MAPY), "WHERE THE NEWS HAPPENED", font=BOLD(12), fill=INK)
 d.text((MAPX, MAPY + 16), "Pins mark the pictured stories", font=SANS(9), fill=GREY)
 # Stylised landmasses as ellipse blobs (lon/lat -> map px).
@@ -524,10 +543,10 @@ for t, txt in TIMELINE:
     d.text((TX, ty), t, font=MONO(10), fill=RED)
     ty = para(d, TX + 46, ty, txt, SANS(9), TW - 46, leading=11, max_lines=1)
     ty += 2
-rule(d, MX, W - MX, 816, 2)
+rule(d, MX, W - MX, 844, 2)
 
 # ------------------------------------------------------------- ALSO ON list
-d.text((MX, 822), "ALSO ON", font=BOLD(12), fill=INK)
+d.text((MX, 850), "ALSO ON", font=BOLD(12), fill=INK)
 ALSO = [
     ("EUROPE", "Babis rejects EU budget plan, opposes €100bn for Ukraine"),
     ("EUROPE", "French police jailed over racist assault on producer"),
@@ -558,18 +577,18 @@ ALSO = [
     ("MARKETS", "US PCE report due Wednesday 25 November"),
 ]
 COLW2 = (W - 2 * MX - 2 * 16) // 3
-ay = 840
+ay = 868
 col = 0
 per_col = (len(ALSO) + 2) // 3
 for i, (region, txt) in enumerate(ALSO):
     if i and i % per_col == 0:
         col += 1
-        ay = 840
+        ay = 868
     ax = MX + col * (COLW2 + 16)
     d.text((ax, ay), region, font=BOLD(8), fill=RED)
     rw = int(d.textlength(region, font=BOLD(8))) + 6
-    ay = para(d, ax + rw, ay, txt, SANS(9), COLW2 - rw, leading=11, max_lines=1)
-    ay += 2
+    ay = para(d, ax + rw, ay, txt, SANS(9), COLW2 - rw, leading=10, max_lines=1)
+    ay += 1
 
 # ------------------------------------------------------------ DATE CHECK box
 DY = 972
