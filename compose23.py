@@ -481,16 +481,39 @@ rule(d, MX, W - MX, 700, 2)
 MAPX, MAPY, MAPW, MAPH = MX, 708, 600, 128
 d.text((MAPX, MAPY), "WHERE THE NEWS HAPPENED", font=BOLD(12), fill=INK)
 d.text((MAPX, MAPY + 16), "Pins mark the pictured stories", font=SANS(9), fill=GREY)
-# Stylised landmasses as ellipse blobs (lon/lat -> map px).
-BLOBS = [
-    # (lon0, lon1, lat0, lat1) rough continent boxes
-    (-168, -52, 15, 72),    # North America
-    (-82, -34, -56, 12),    # South America
-    (-12, 32, 36, 70),      # Europe
-    (-18, 52, -35, 36),     # Africa
-    (32, 180, 5, 78),       # Asia
-    (112, 155, -40, -10),   # Australia
-    (166, 180, -47, -34),   # New Zealand
+# Real continent shapes, hand-drawn as a 28-row x 60-column grid of column
+# spans (same LAND table as the 19 Nov entry, which drew the best map):
+# row r covers latitude 80 - 5*r down to 75 - 5*r, column c covers
+# longitude -180 + 6*c to -174 + 6*c. Dots are dark and dense, as on 19 Nov.
+LAND = [
+    (0, [(16, 16), (21, 26), (32, 34), (45, 48)]),
+    (1, [(2, 27), (42, 58)]),
+    (2, [(2, 26), (31, 59)]),
+    (3, [(2, 25), (31, 59)]),
+    (4, [(4, 21), (29, 59)]),
+    (5, [(8, 22), (29, 59)]),
+    (6, [(9, 24), (30, 59)]),
+    (7, [(10, 25), (29, 55)]),
+    (8, [(11, 25), (30, 53)]),
+    (9, [(12, 25), (29, 52)]),
+    (10, [(13, 25), (29, 52)]),
+    (11, [(16, 20), (28, 46), (48, 52)]),
+    (12, [(17, 19), (27, 46), (48, 51)]),
+    (13, [(18, 20), (27, 40), (43, 45), (49, 55)]),
+    (14, [(18, 22), (28, 40), (49, 58)]),
+    (15, [(19, 24), (29, 40), (50, 58)]),
+    (16, [(19, 26), (30, 40), (51, 58)]),
+    (17, [(20, 27), (31, 39), (52, 55)]),
+    (18, [(20, 27), (31, 38), (49, 56)]),
+    (19, [(21, 27), (31, 38), (49, 56)]),
+    (20, [(21, 27), (31, 36), (49, 55)]),
+    (21, [(22, 26), (32, 35), (50, 55)]),
+    (22, [(22, 25), (32, 34), (50, 54), (57, 58)]),
+    (23, [(23, 25), (51, 54), (57, 58)]),
+    (24, [(23, 24), (54, 54), (57, 58)]),
+    (25, [(23, 24), (57, 57)]),
+    (26, [(23, 24)]),
+    (27, [(23, 23)]),
 ]
 
 
@@ -500,28 +523,62 @@ def lonlat_to_xy(lon, lat):
     return px, py
 
 
-# dot grid
-for gx in range(0, MAPW, 7):
-    for gy in range(34, MAPH - 4, 7):
-        lon = (MAPX + gx - MAPX) / MAPW * 360 - 170
-        lat = 75 - (MAPY + gy - MAPY - 34) / (MAPH - 40) * 130
-        inside = any(lo0 <= lon <= lo1 and la0 <= lat <= la1
-                     for lo0, lo1, la0, la1 in BLOBS)
-        if inside:
-            d.ellipse([MAPX + gx - 1, MAPY + gy - 1, MAPX + gx + 1, MAPY + gy + 1],
-                      fill=(120, 120, 116))
+def _on_land(lon, lat):
+    """True when a lon/lat point falls inside the hand-drawn LAND grid."""
+    c = int((lon + 180) // 6)
+    r = int((80 - lat) // 5)
+    if r < 0 or r >= len(LAND):
+        return False
+    return any(c0 <= c <= c1 for c0, c1 in LAND[r][1])
+
+
+# dot grid: a dot wherever the grid point lands on real land
+MAP_DOT_R = 1.7
+MAP_DOT_STEP = 6
+for gx in range(0, MAPW, MAP_DOT_STEP):
+    for gy in range(34, MAPH - 4, MAP_DOT_STEP):
+        lon = gx / MAPW * 360 - 170
+        lat = 75 - gy / (MAPH - 40) * 130
+        if _on_land(lon, lat):
+            x, y = MAPX + gx, MAPY + gy
+            d.ellipse([x - MAP_DOT_R, y - MAP_DOT_R,
+                       x + MAP_DOT_R, y + MAP_DOT_R], fill=(70, 70, 66))
+# Numbered pins for the 13 pictured stories, in page order: leads 1-3,
+# then cards 4-13. (number, lon, lat, dx, dy); dx/dy offsets the numbered
+# circle from the exact spot, with a leader line, where two pins collide.
 PINS = [
-    ("Benghazi", 20, 32, 6, 6), ("Warsaw", 21, 52, 6, -14),
-    ("Delhi", 77, 28, -34, 8), ("Seoul", 127, 37, 6, -14),
-    ("Banten", 106, -6, 6, 6), ("Lahore", 74, 31, 6, -14),
-    ("Washington", -77, 39, 6, -4), ("Brasilia", -48, -16, 6, -4),
-    ("Wellington", 175, -41, -56, -4), ("Manila", 121, 14, 6, 6),
+    (1, -77, 39, 0, 0),      # Nvidia reinstates Huang — Washington
+    (2, 20, 32, 0, 14),      # sea drones sink corvette — Benghazi
+    (3, 21, 52, 0, 0),       # Poland missile debris — Warsaw
+    (4, -77, 39, 20, -16),   # US House majority — Washington
+    (5, 4, 50, 0, 0),        # EU 22nd sanctions — Brussels
+    (6, 127, 37, 0, 0),      # Kospi dives — Seoul
+    (7, 106, -6, 0, 0),      # Indonesia factory fire — Banten
+    (8, 74, 31, 0, 0),       # Lahore tops pollution list — Lahore
+    (9, -97, 30, 0, 0),      # CrowdStrike buys Zscaler — Austin
+    (10, -48, -16, 0, 0),    # Brazil supercell storm — Brasilia
+    (11, 175, -41, 0, 0),    # India 720/9 in Wellington — Wellington
+    (12, 147, -9, 0, 0),     # Air Niugini emergency landing — Port Moresby
+    (13, 37, 55, 0, 0),      # NATO satellite intelligence — Moscow
 ]
-for name, lon, lat, dx, dy in PINS:
+_seen_spots = set()
+for n, lon, lat, dx, dy in PINS:
     px, py = lonlat_to_xy(lon, lat)
-    d.ellipse([px - 5, py - 5, px + 5, py + 5], fill=RED,
+    cx, cy = px + dx, py + dy
+    # The spot dot only once per place: pins 1 and 4 share Washington, and
+    # pin 1's numbered circle already marks it, so pin 4 draws no dot there.
+    if (lon, lat) not in _seen_spots:
+        d.ellipse([px - 2, py - 2, px + 2, py + 2], fill=INK)
+        _seen_spots.add((lon, lat))
+    if dx or dy:
+        # Leader from the edge of the base pin's circle, so it never crosses
+        # the number of a pin sharing the same spot.
+        _len = (dx * dx + dy * dy) ** 0.5
+        d.line([px + 8 * dx / _len, py + 8 * dy / _len, cx, cy],
+               fill=GREY, width=1)
+    d.ellipse([cx - 7, cy - 7, cx + 7, cy + 7], fill=RED,
               outline=(255, 255, 255), width=1)
-    d.text((px + dx, py + dy), name, font=BOLD(8), fill=RED)
+    d.text((cx, cy), str(n), font=BOLD(9), fill=(255, 255, 255), anchor="mm")
 
 # ------------------------------------------------------------ UTC timeline
 TX = MAPX + MAPW + 14

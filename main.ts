@@ -29,4 +29,7 @@ const height = buf.readUInt32BE(20);
 if (width !== 1024 || height !== 1024) {
   throw new Error(`entry.png must be 1024x1024, got ${width}x${height}`);
 }
+if (buf.length > 1048576) {
+  throw new Error(`entry.png must be at most 1 MiB, got ${buf.length} bytes`);
+}
 copyFileSync(src, join(outDir, 'entry.png'));
